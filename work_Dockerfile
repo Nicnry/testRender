@@ -1,0 +1,29 @@
+# Étape de construction
+FROM openjdk:17-jdk-slim as builder
+
+# Installer Maven
+RUN apt-get update && \
+    apt-get install -y maven && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copier le pom.xml et les sources
+COPY pom.xml .
+COPY src /app/src
+
+# Construire le projet
+RUN mvn clean install -DskipTests
+
+# Étape d'exécution
+FROM openjdk:17-jdk-slim
+
+WORKDIR /app
+
+# Copier le jar produit par le builder
+COPY --from=builder /app/target/*.jar /app/
+
+EXPOSE 8080
+
+# Utiliser java pour démarrer l'application au lieu de mvn
+CMD ["java", "-Dspring.devtools.restart.enabled=true", "-jar", "/app/event-booking-0.0.1-SNAPSHOT.jar"]
